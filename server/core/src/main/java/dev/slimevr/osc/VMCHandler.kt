@@ -180,6 +180,8 @@ class VMCHandler(
 				lastAddress = addr
 
 				oscSender!!.connect()
+				// Prevents blocking when target is unreachable, freezing whole server (up to 3s)
+				oscSender!!.configureBlocking(false);
 				outputUnityArmature = UnityArmature(false)
 			} catch (e: IOException) {
 				LogManager
@@ -470,6 +472,7 @@ class VMCHandler(
 				}
 
 				// Send OSC packets as bundle
+				val timeStartSend = System.currentTimeMillis()
 				try {
 					oscSender!!.send(oscBundle)
 				} catch (e: IOException) {
@@ -492,6 +495,11 @@ class VMCHandler(
 									e,
 							)
 					}
+				} finally {
+					if (System.currentTimeMillis() - timeStartSend > 10 || timeStartSend - timeAtLastSend > 10)
+				    LogManager.info("Send attempt took ${System.currentTimeMillis() - timeStartSend}ms, interval ${
+						timeStartSend - timeAtLastSend }ms")
+					timeAtLastSend = System.currentTimeMillis()
 				}
 			}
 		}

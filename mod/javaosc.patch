@@ -1,0 +1,70 @@
+diff --git a/modules/core/src/main/java/com/illposed/osc/transport/OSCPort.java b/modules/core/src/main/java/com/illposed/osc/transport/OSCPort.java
+index 7a980d9..aacf559 100644
+--- a/modules/core/src/main/java/com/illposed/osc/transport/OSCPort.java
++++ b/modules/core/src/main/java/com/illposed/osc/transport/OSCPort.java
+@@ -146,6 +146,18 @@ public class OSCPort {
+ 		return transport.isConnected();
+ 	}
+ 
++	public boolean configureBlocking(final boolean block) {
++		try {
++			return transport.configureBlocking(block);
++		} catch(java.io.IOException e) {
++			return transport.isBlocking();
++		}
++	}
++
++	public boolean isBlocking() {
++		return transport.isBlocking();
++	}
++
+ 	/**
+ 	 * Close the socket and free-up resources.
+ 	 * It is recommended that clients call this when they are done with the
+diff --git a/modules/core/src/main/java/com/illposed/osc/transport/Transport.java b/modules/core/src/main/java/com/illposed/osc/transport/Transport.java
+index de0d658..c5167c4 100644
+--- a/modules/core/src/main/java/com/illposed/osc/transport/Transport.java
++++ b/modules/core/src/main/java/com/illposed/osc/transport/Transport.java
+@@ -39,6 +39,8 @@ public interface Transport {
+ 	 */
+ 	OSCPacket receive() throws IOException, OSCParseException;
+ 
++	boolean configureBlocking(final boolean block) throws IOException;
++
+ 	boolean isBlocking();
+ 
+ 	void connect() throws IOException;
+diff --git a/modules/core/src/main/java/com/illposed/osc/transport/tcp/TCPTransport.java b/modules/core/src/main/java/com/illposed/osc/transport/tcp/TCPTransport.java
+index bf5b086..bdc352a 100644
+--- a/modules/core/src/main/java/com/illposed/osc/transport/tcp/TCPTransport.java
++++ b/modules/core/src/main/java/com/illposed/osc/transport/tcp/TCPTransport.java
+@@ -198,6 +198,12 @@ public class TCPTransport implements Transport {
+ 		}
+ 	}
+ 
++	@Override
++	public boolean configureBlocking(final boolean block) throws IOException {
++		// Not relevant for TCP.
++		return false;
++	}
++
+ 	@Override
+ 	public boolean isBlocking() {
+ 		// Not relevant for TCP.
+diff --git a/modules/core/src/main/java/com/illposed/osc/transport/udp/UDPTransport.java b/modules/core/src/main/java/com/illposed/osc/transport/udp/UDPTransport.java
+index 46d9d59..421632f 100644
+--- a/modules/core/src/main/java/com/illposed/osc/transport/udp/UDPTransport.java
++++ b/modules/core/src/main/java/com/illposed/osc/transport/udp/UDPTransport.java
+@@ -140,6 +140,12 @@ public class UDPTransport implements Transport {
+ 		return oscChannel.read(recvBuffer);
+ 	}
+ 
++	@Override
++	public boolean configureBlocking(final boolean block) throws IOException {
++		channel.configureBlocking(block);
++		return block;
++	}
++
+ 	@Override
+ 	public boolean isBlocking() {
+ 		return channel.isBlocking();

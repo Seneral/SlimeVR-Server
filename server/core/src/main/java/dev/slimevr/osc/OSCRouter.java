@@ -131,6 +131,8 @@ public class OSCRouter {
 					lastAddress = address;
 
 					oscSender.connect();
+					// Prevents blocking when target is unreachable, freezing whole server (up to 3s)
+					oscSender.configureBlocking(false);
 				} catch (IOException e) {
 					LogManager
 						.severe(

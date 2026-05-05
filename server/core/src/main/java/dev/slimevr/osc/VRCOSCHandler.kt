@@ -63,6 +63,7 @@ class VRCOSCHandler(
 	private var oscQueryIp: InetAddress? = null
 	private var oscQueryIpMatch = false
 	private var timeAtLastError: Long = 0
+	private var timeLastSend: Long = 0
 	private var receivingPositionOffset = Vector3.NULL
 	private var postReceivingPositionOffset = Vector3.NULL
 	private var receivingRotationOffset = Quaternion.IDENTITY
@@ -193,6 +194,8 @@ class VRCOSCHandler(
 			// Avoids additional security checks, but not necessary for UDP, therefore
 			//  isConnected doesn't really indicate that we are actively "connected"
 			oscQuerySender?.connect()
+			// Prevents blocking when target is unreachable, freezing whole server (up to 3s)
+			oscQuerySender?.configureBlocking(false)
 		} catch (e: IOException) {
 			LogManager.severe("[VRCOSCHandler] Error connecting OSCQuery sender to port $oscPortOut at the address $oscIP: $e")
 			closeOscQuerySender()
@@ -307,6 +310,8 @@ class VRCOSCHandler(
 			// Avoids additional security checks, but not necessary for UDP, therefore
 			//  isConnected doesn't really indicate that we are actively "connected"
 			newOscSender.connect()
+			// Prevents blocking when target is unreachable, freezing whole server (up to 3s)
+			newOscSender.configureBlocking(false)
 
 			if (resetQuery) {
 				closeOscQuerySender()
