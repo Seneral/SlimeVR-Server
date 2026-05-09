@@ -9,6 +9,7 @@ import dev.slimevr.tracking.trackers.udp.MagnetometerStatus
 import dev.slimevr.tracking.trackers.udp.TrackerDataType
 import dev.slimevr.util.InterpolationHandler
 import io.eiren.util.BufferedTimer
+import io.eiren.util.logging.LogManager
 import io.github.axisangles.ktmath.Quaternion
 import io.github.axisangles.ktmath.Vector3
 import kotlin.properties.Delegates
@@ -308,6 +309,14 @@ class Tracker @JvmOverloads constructor(
 	 * NOTE: Use only when rotation is received
 	 */
 	fun dataTick() {
+		if (trackerPosition == TrackerPosition.HEAD && !isInternal && System.currentTimeMillis() - timeAtLastUpdate > 1000)
+		{
+			LogManager.warning("[Tracker] ${name} had data dropout of ${System.currentTimeMillis() - timeAtLastUpdate}ms!")
+		}
+		else if (trackerPosition == TrackerPosition.HEAD && !isInternal && System.currentTimeMillis() - timeAtLastUpdate > 100)
+		{
+			LogManager.warning("[Tracker] ${name} had data dropout of ${System.currentTimeMillis() - timeAtLastUpdate}ms!")
+		}
 		timer.update()
 		timeAtLastUpdate = System.currentTimeMillis()
 		if (trackRotDirection) {
@@ -335,14 +344,22 @@ class Tracker @JvmOverloads constructor(
 		if (!stayAligned.hideCorrection) {
 			// Yaw drift happens in the raw rotation space
 			rot = Quaternion.rotationAroundYAxis(stayAligned.yawCorrection.toRad()) * rot
+			if (trackerPosition == TrackerPosition.HEAD && !isInternal && stayAligned.yawCorrection.toRad() > 0)
+			{
+				LogManager.warning("[Tracker] ${name} head is getting rotated by stay aligned!")
+			}
 		}
 
 		// Reset if needed and is not computed and internal
-		return if (allowReset && !(isComputed && isInternal) && trackerDataType == TrackerDataType.ROTATION) {
+		if (allowReset && !(isComputed && isInternal) && trackerDataType == TrackerDataType.ROTATION) {
 			// Adjust to reset, mounting and drift compensation
-			resetsHandler.getReferenceAdjustedDriftRotationFrom(rot)
+			if (trackerPosition == TrackerPosition.HEAD && !isInternal)
+			{
+				LogManager.warning("[Tracker] ${name} head is getting reset-adjusted!")
+			}
+			return resetsHandler.getReferenceAdjustedDriftRotationFrom(rot)
 		} else {
-			rot
+			return rot
 		}
 	}
 

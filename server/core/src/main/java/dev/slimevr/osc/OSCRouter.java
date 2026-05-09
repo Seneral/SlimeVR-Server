@@ -47,6 +47,7 @@ public class OSCRouter {
 		// Stops listening and closes OSC port
 		boolean wasListening = oscReceiver != null && oscReceiver.isListening();
 		if (wasListening) {
+			LogManager.warning("[OSCRouter] Stopping to listen to oscReceiver for refreshSettings!");
 			oscReceiver.stopListening();
 		}
 		oscReceiver = null;
@@ -153,8 +154,10 @@ public class OSCRouter {
 				MessageSelector selector = new OSCPatternAddressMessageSelector("//");
 				oscReceiver.getDispatcher().addListener(selector, listener);
 				oscReceiver.getDispatcher().setAlwaysDispatchingImmediately(true);
-				if (!oscReceiver.isListening())
+				if (!oscReceiver.isListening()) {
 					oscReceiver.startListening();
+					LogManager.warning("[OSCRouter] Restarting to listen to oscReceiver in refreshSettings!");
+				}
 			}
 		}
 	}

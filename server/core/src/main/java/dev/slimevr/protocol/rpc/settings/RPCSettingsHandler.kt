@@ -17,6 +17,8 @@ import solarxr_protocol.rpc.RpcMessageHeader
 import solarxr_protocol.rpc.SettingsResponse
 import kotlin.math.*
 
+import io.eiren.util.logging.LogManager
+
 class RPCSettingsHandler(var rpcHandler: RPCHandler, var api: ProtocolAPI) {
 	init {
 		rpcHandler.registerPacketListener(RpcMessage.SettingsRequest, ::onSettingsRequest)
@@ -89,6 +91,7 @@ class RPCSettingsHandler(var rpcHandler: RPCHandler, var api: ProtocolAPI) {
 				oscRouterConfig.address = osc.address()
 			}
 			oscRouterConfig.rescaleTracking = req.oscRouter().rescaleTracking()
+			LogManager.warning("Changed OSC Router settings! Rescale Tracking is ${if (oscRouterConfig.rescaleTracking) "on" else "off"}");
 
 			oscRouter.refreshSettings(true)
 		}

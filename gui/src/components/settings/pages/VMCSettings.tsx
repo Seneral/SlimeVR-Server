@@ -97,6 +97,7 @@ export function VMCFileUpload({ suggested = false, required = false }) {
     const vrmJson = settings.vrm?.vrmJson?.toString();
     if (vrmJson) {
       let data: any;
+      console.log("Received new OSC VMC settings, reading vrmJSON, with rescale tracking " + (settings.vmcOsc?.rescaleTracking? "on" : "off"));
       try {
         data = JSON.parse(vrmJson);
         setModelName(getVRMName(data) || '');

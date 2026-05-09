@@ -32,6 +32,10 @@ import solarxr_protocol.datatypes.math.Vec3f
 import java.nio.ByteBuffer
 import java.util.function.Consumer
 
+import io.eiren.util.logging.LogManager
+import dev.slimevr.tracking.processor.BoneType
+import io.github.axisangles.ktmath.EulerOrder
+
 fun createHardwareInfo(fbb: FlatBufferBuilder, device: Device): Int {
 	val nameOffset = if (device.firmwareVersion != null) {
 		fbb.createString(device.firmwareVersion)
@@ -439,6 +443,10 @@ fun createBonesData(
 		val rotG =
 			bi.getGlobalRotation()
 		val length = bi.length
+
+		/* if (bi.boneType == BoneType.HEAD) {
+			LogManager.warning("[DataFeed] Head Bone: (${headPosG.x}, ${headPosG.y}, ${headPosG.z}), Yaw Local ${bi.getLocalRotation().toEulerAngles(EulerOrder.YXZ).y}, Yaw Global ${bi.getGlobalRotation().toEulerAngles(EulerOrder.YXZ).y} !")
+		} */
 
 		solarxr_protocol.data_feed.Bone.startBone(fbb)
 

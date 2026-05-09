@@ -43,6 +43,8 @@ import solarxr_protocol.rpc.settings.ModelSettings
 import solarxr_protocol.rpc.settings.ModelToggles
 import solarxr_protocol.rpc.settings.SkeletonHeight
 
+import io.eiren.util.logging.LogManager
+
 fun createOSCRouterSettings(
 	fbb: FlatBufferBuilder,
 	config: OSCRouterConfig,
@@ -61,6 +63,7 @@ fun createOSCRouterSettings(
 	OSCRouterSettings.startOSCRouterSettings(fbb)
 	OSCRouterSettings.addOscSettings(fbb, oscSettingOffset)
 	OSCRouterSettings.addRescaleTracking(fbb, config.rescaleTracking)
+	LogManager.warning("Updating remote OSC Router settings! Rescale Tracking is ${if (config.rescaleTracking) "on" else "off"}");
 
 	return OSCRouterSettings.endOSCRouterSettings(fbb)
 }

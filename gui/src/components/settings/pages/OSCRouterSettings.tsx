@@ -75,6 +75,7 @@ export function OSCRouterSettings() {
         values.router.oscSettings
       );
       router.rescaleTracking = values.router.rescaleTracking;
+      console.log("Submitting new OSC Router settings, rescale tracking " + (router.rescaleTracking? "on" : "off"));
 
       settings.oscRouter = router;
     }

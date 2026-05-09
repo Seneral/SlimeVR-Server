@@ -121,6 +121,7 @@ class VMCHandler(
 		val wasListening = oscReceiver != null && oscReceiver!!.isListening
 		if (wasListening) {
 			oscReceiver!!.stopListening()
+			LogManager.warning("[VMCHandler] Stopping to listen to oscReceiver for refreshSettings!")
 		}
 
 		if (config.enabled) {
@@ -150,6 +151,7 @@ class VMCHandler(
 
 				oscReceiver!!.dispatcher.setAlwaysDispatchingImmediately(true)
 				oscReceiver!!.startListening()
+				LogManager.warning("[VMCHandler] Restarting to listen to oscReceiver in refreshSettings!");
 			}
 		}
 	}
@@ -288,6 +290,7 @@ class VMCHandler(
 
 		// Create tracker if trying to get it returned null
 		if (tracker == null) {
+			val relativeRot = position == null;
 			tracker = Tracker(
 				trackerDevice,
 				getNextLocalTrackerId(),
@@ -299,7 +302,8 @@ class VMCHandler(
 				userEditable = true,
 				isComputed = position != null,
 				usesTimeout = true,
-				allowReset = position != null,
+				allowReset = relativeRot,
+				//trackRotDirection = relativeRot,
 				isHmd = isHmd,
 			)
 			trackerDevice!!.trackers[trackerDevice!!.trackers.size] = tracker
@@ -346,6 +350,8 @@ class VMCHandler(
 
 				// Rescale tracking to avatar scale if configured with target VRM
 				val vrmScale = if (vrmHeight > 0) vrmHeight / humanPoseManager.userNeckHeightFromConfig else 1f
+				if (vrmScale != server.oSCRouter.scaleTrackingVolume)
+					LogManager.warning("VRM Scale is different, not update correctly! Old ${server.oSCRouter.scaleTrackingVolume}, new $vrmScale")
 				server.oSCRouter.scaleTrackingVolume = vrmScale
 
 				if (humanPoseManager.isSkeletonPresent) {
@@ -392,6 +398,10 @@ class VMCHandler(
 
 							// Calculate the new VRM hip position by subtracting the difference head-hip distance from the SlimeVR head
 							val calculatedVrmHipPos = rootPos - (vrmHeadPos - vrmHipPos)
+
+							//LogManager.debug("Have root pos for neck (${rootPosNeck.x}, ${rootPosNeck.y}, ${rootPosNeck.z}) and head (${rootPosHead.x}, ${rootPosHead.y}, ${rootPosHead.z})")
+
+							//LogManager.debug("Anchoring HIP to scaled root pos (${rootPos.x}, ${rootPos.y}, ${rootPos.z}) resulting in  (${calculatedVrmHipPos.x}, ${calculatedVrmHipPos.y}, ${calculatedVrmHipPos.z})")
 
 							// Set the VRM's hip position
 							unityArmature.getHeadNodeOfBone(UnityBone.HIPS)?.localTransform?.translation = calculatedVrmHipPos
@@ -512,6 +522,7 @@ class VMCHandler(
 	 */
 	fun alignVMCTracking(reference: Quaternion) {
 		yawOffset = reference.project(POS_Y).unit()
+		LogManager.info("Setting VMC bones yaw offset to (${yawOffset.x}, ${yawOffset.y}, ${yawOffset.z}, ${yawOffset.w})")
 	}
 
 	/**

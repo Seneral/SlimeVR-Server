@@ -23,6 +23,7 @@ import dev.slimevr.util.ann.VRServerThread
 import io.eiren.util.ann.ThreadSafe
 import io.eiren.util.collections.FastList
 import io.eiren.util.logging.LogManager
+import io.github.axisangles.ktmath.EulerOrder
 import io.github.axisangles.ktmath.Quaternion
 import io.github.axisangles.ktmath.Quaternion.Companion.I
 import io.github.axisangles.ktmath.Quaternion.Companion.IDENTITY
@@ -33,6 +34,7 @@ import io.github.axisangles.ktmath.Vector3.Companion.NULL
 import io.github.axisangles.ktmath.Vector3.Companion.POS_Y
 import solarxr_protocol.datatypes.BodyPart
 import java.lang.IllegalArgumentException
+import kotlin.math.PI
 import kotlin.properties.Delegates
 
 class HumanSkeleton(
@@ -124,7 +126,10 @@ class HumanSkeleton(
 	// Input trackers
 	var headTracker: Tracker? by Delegates.observable(null) { _, old, new ->
 		if (old == new) return@observable
-
+		LogManager
+			.info(
+				"[HumanSkeleton] Head Tracker reassigned! ${old?.name ?: "Null"} -> ${new?.name ?: "Null"}",
+			)
 		humanPoseManager.checkTrackersRequiringReset()
 	}
 	var neckTracker: Tracker? = null
@@ -770,10 +775,20 @@ class HumanSkeleton(
 		var headRot = IDENTITY
 		headTracker?.let { head ->
 			// Set head position
-			if (head.hasPosition) headBone.setPosition(head.position)
+			if (head.hasPosition)
+			{
+				//LogManager.debug("Head has position (${head.position.x}, ${head.position.y}, ${head.position.z}) from tracker ${head.name}")
+				headBone.setPosition(head.position)
+				//headTrackerBone.setPosition(head.position)
+			}
 
 			// Get head rotation
 			headRot = head.getRotation()
+
+			/* val rawPos = head.position
+			val rawRot = head.getRawRotation().toEulerAngles(EulerOrder.YXZ)
+			val adjRot = headRot.toEulerAngles(EulerOrder.YXZ)
+			LogManager.info("Head: (${rawPos.x}, ${rawPos.y}, ${rawPos.z}), Yaw Raw ${rawRot.y*180/PI}, Yaw Adj ${adjRot.y*180/PI}") */
 
 			// Set head rotation
 			headBone.setRotation(headRot)
@@ -784,7 +799,7 @@ class HumanSkeleton(
 
 			// Set neck rotation
 			neckBone.setRotation(headRot)
-		} ?: run {
+		} ?: run { // In absence of a headTracker:
 			// Set head position
 			if (!localizer.getEnabled()) headBone.setPosition(NULL)
 
@@ -1170,6 +1185,11 @@ class HumanSkeleton(
 	}
 
 	private fun updateComputedTracker(computedTracker: Tracker?, trackerBone: Bone) {
+		/*val pos = trackerBone.getTailPosition()
+		if (trackerBone.boneType == BoneType.HEAD_TRACKER)
+			LogManager.debug("Head Tracker Bone at (${pos.x}, ${pos.y}, ${pos.z}) updating computed tracker ${computedTracker?.trackerPosition?.name}")
+		else if (trackerBone.boneType == BoneType.HEAD)
+			LogManager.debug("Head Bone at (${pos.x}, ${pos.y}, ${pos.z}) updating computed tracker ${computedTracker?.trackerPosition?.name}")*/
 		computedTracker?.let {
 			it.position = trackerBone.getTailPosition()
 			it.setRotation(trackerBone.getGlobalRotation() * trackerBone.rotationOffset.inv())
@@ -1227,6 +1247,10 @@ class HumanSkeleton(
 	// Skeleton Config bone lengths
 	fun updateNodeOffset(boneType: BoneType, offset: Vector3) {
 		var transOffset = offset
+
+		/*if (boneType == BoneType.HEAD){
+			LogManager.warning("[Skeleton] Head bone is receiving offsets!")
+		}*/
 
 		// If no head position, headShift and neckLength = 0
 		if ((boneType == BoneType.HEAD || boneType == BoneType.NECK) && (headTracker == null || !(headTracker!!.hasPosition && headTracker!!.hasRotation))) {
@@ -1560,8 +1584,11 @@ class HumanSkeleton(
 				// Always reset the head (ifs in resetsHandler)
 				it.resetsHandler.resetFull(referenceRotation)
 			}
-			referenceRotation = it.getRotation()
+			referenceRotation = it.getRotationNoResetSmooth()
+			LogManager.info("Getting full reset reference rotation from head tracker ${headTracker?.name}: (${referenceRotation.x}, ${referenceRotation.y}, ${referenceRotation.z}, ${referenceRotation.w})")
 		}
+		val referenceAngle = referenceRotation.toEulerAngles(EulerOrder.YZX)
+		LogManager.info("Full reset reference rotation: (${referenceAngle.x * 180 / PI}, ${referenceAngle.y * 180 / PI}, ${referenceAngle.z * 180 / PI})")
 
 		// Resets all axes of the trackers with the HMD as reference.
 		for (tracker in trackersToReset) {
@@ -1595,6 +1622,7 @@ class HumanSkeleton(
 				}
 			}
 			referenceRotation = it.getRotation()
+			LogManager.info("Getting yaw reset reference rotation from head tracker ${headTracker?.name}: (${referenceRotation.x}, ${referenceRotation.y}, ${referenceRotation.z}, ${referenceRotation.w})")
 		}
 		for (tracker in trackersToReset) {
 			// Only reset if tracker allowReset
@@ -1635,6 +1663,7 @@ class HumanSkeleton(
 				}
 			}
 			referenceRotation = it.getRotation()
+			LogManager.info("Getting mounting reference rotation from head tracker ${headTracker?.name}: (${referenceRotation.x}, ${referenceRotation.y}, ${referenceRotation.z}, ${referenceRotation.w})")
 		}
 
 		for (tracker in trackersToReset) {

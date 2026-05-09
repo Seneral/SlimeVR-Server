@@ -28,6 +28,7 @@ import { bonesAtom } from '@/store/app-store';
 import { useConfig } from '@/hooks/config';
 import { Tween } from '@tweenjs/tween.js';
 import { EyeIcon } from '@/components/commons/icon/EyeIcon';
+import { getYawInDegrees } from '@/maths/quaternion';
 
 const GROUND_COLOR = '#2c2c6b';
 
@@ -119,6 +120,7 @@ function initializePreview(
   const computeSkeletonPos = (bones: Map<BodyPart, BoneT>) => {
     const hmd = bones.get(BodyPart.HEAD);
     const pos = new Vector3(hmd?.headPositionG?.x ?? 0, hmd?.headPositionG?.y ?? 0, hmd?.headPositionG?.z ?? 0);
+    //console.log("Head Bone: (" + pos.x + ", " + pos.y + ", " + pos.z + "), Yaw " + getYawInDegrees(hmd?.rotationG) + "!")
     if (pos.length() != 0) return pos;
     // Estimate head height based on skeleton
     // This path should not occur, server should send some kind of root position

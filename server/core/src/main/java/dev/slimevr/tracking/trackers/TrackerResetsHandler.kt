@@ -7,6 +7,7 @@ import dev.slimevr.config.DriftCompensationConfig
 import dev.slimevr.config.ResetsConfig
 import dev.slimevr.filtering.CircularArrayList
 import dev.slimevr.tracking.trackers.udp.TrackerDataType
+import io.eiren.util.logging.LogManager
 import io.github.axisangles.ktmath.EulerAngles
 import io.github.axisangles.ktmath.EulerOrder
 import io.github.axisangles.ktmath.Quaternion
@@ -177,7 +178,9 @@ class TrackerResetsHandler(val tracker: Tracker) {
 	 * Takes a rotation and adjusts it to resets, mounting,
 	 * and drift compensation, with the HMD as the reference.
 	 */
-	fun getReferenceAdjustedDriftRotationFrom(rotation: Quaternion): Quaternion = adjustToDrift(adjustToReference(rotation))
+	fun getReferenceAdjustedDriftRotationFrom(rotation: Quaternion): Quaternion {
+		return adjustToDrift(adjustToReference(rotation))
+	}
 
 	/**
 	 * Takes a rotation and adjusts it to resets and mounting,
@@ -302,16 +305,21 @@ class TrackerResetsHandler(val tracker: Tracker) {
 		}
 
 		// Attachment fix
-		attachmentFix = if (tracker.trackerPosition == TrackerPosition.HEAD && tracker.isHmd) {
-			if (resetHmdPitch) {
+		attachmentFix = if (tracker.trackerPosition == TrackerPosition.HEAD) {
+			if (resetHmdPitch && tracker.isHmd) {
 				// Reset the HMD's pitch if it's assigned to head and resetHmdPitch is true
 				// Get rotation without yaw (make sure to use the raw rotation directly!)
 				val rotBuf = getYawQuaternion(tracker.getRawRotation()).inv() * tracker.getRawRotation()
 				// Isolate pitch
 				Quaternion(rotBuf.w, -rotBuf.x, 0f, 0f).unit()
 			} else {
-				// Don't reset the HMD at all
-				Quaternion.IDENTITY
+				if (tracker.isHmd) {
+					// Don't reset the HMD at all
+					Quaternion.IDENTITY
+				} else {
+					//Quaternion.IDENTITY
+					fixAttachment(mountingAdjustedRotation)
+				}
 			}
 		} else {
 			fixAttachment(mountingAdjustedRotation)
@@ -328,6 +336,18 @@ class TrackerResetsHandler(val tracker: Tracker) {
 		if (tracker.trackerPosition != TrackerPosition.HEAD || !tracker.isComputed) {
 			yawFix = fixYaw(mountingAdjustedRotation, reference)
 			tracker.yawResetSmoothing.reset()
+		}
+
+		if (tracker.trackerPosition == TrackerPosition.HEAD) {
+			LogManager.info("Full reset with Head Tracker ${tracker.name}:")
+			val referenceAngle = reference.toEulerAngles(EulerOrder.YZX)
+			LogManager.info("    Reference Rotation: (${referenceAngle.x * 180 / PI}, ${referenceAngle.y * 180 / PI}, ${referenceAngle.z * 180 / PI})")
+			val mountAdjAngle = mountingAdjustedRotation.toEulerAngles(EulerOrder.YZX)
+			LogManager.info("    Mounting Adj Rot: (${mountAdjAngle.x * 180 / PI}, ${mountAdjAngle.y * 180 / PI}, ${mountAdjAngle.z * 180 / PI})")
+			val attachFixAngle = attachmentFix.toEulerAngles(EulerOrder.YZX)
+			LogManager.info("    Attachment Fix Rot: (${attachFixAngle.x * 180 / PI}, ${attachFixAngle.y * 180 / PI}, ${attachFixAngle.z * 180 / PI})")
+			val existAngle = tracker.getRawRotation().toEulerAngles(EulerOrder.YZX)
+			LogManager.info("    Existing Rotation: (${existAngle.x * 180 / PI}, ${existAngle.y * 180 / PI}, ${existAngle.z * 180 / PI})")
 		}
 
 		calculateDrift(oldRot)
