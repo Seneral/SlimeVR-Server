@@ -127,7 +127,7 @@ public enum SkeletonConfigOffsets {
 	HAND_Z(
 		19,
 		"handDistanceZ",
-		0.13f,
+		0.08f,
 		new BoneType[] { BoneType.LEFT_HAND, BoneType.RIGHT_HAND }
 	),
 	ELBOW_OFFSET(
