@@ -14,6 +14,7 @@ import kotlin.math.*
 class IKChain(
 	val bones: MutableList<Bone>,
 	var parent: IKChain?,
+	val order: Int,
 	val level: Int,
 	val baseConstraint: Tracker?,
 	val tailConstraint: Tracker?,

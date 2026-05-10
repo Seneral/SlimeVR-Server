@@ -34,13 +34,13 @@ class IKSolver(private val root: Bone) {
 		val positionalConstraints = extractPositionalConstraints(trackers)
 		val rotationalConstraints = extractRotationalConstraints(trackers)
 
-		rootChain = chainBuilder(root, null, 0, positionalConstraints, rotationalConstraints)
+		rootChain = chainBuilder(root, null, 0, 0, positionalConstraints, rotationalConstraints)
 		populateChainList(rootChain!!)
 		addConstraints()
 
 		// Check if there is any constraints (other than the head) in the model
 		rootChain = if (neededChain(rootChain!!)) rootChain else null
-		chainList.sortBy { -it.level }
+		chainList.sortBy { it.order * 100 - it.level }
 	}
 
 	/**
@@ -59,6 +59,7 @@ class IKSolver(private val root: Bone) {
 	private fun chainBuilder(
 		root: Bone,
 		parent: IKChain?,
+		order: Int,
 		level: Int,
 		positionalConstraints: MutableList<Tracker>,
 		rotationalConstraints: MutableList<Tracker>,
@@ -88,13 +89,15 @@ class IKSolver(private val root: Bone) {
 			tailConstraint = getConstraint(currentBone, positionalConstraints)
 		}
 
-		var chain = IKChain(boneList, parent, level, baseConstraint, tailConstraint)
+		var chain = IKChain(boneList, parent, order, level, baseConstraint, tailConstraint)
 
 		if (currentBone.children.isNotEmpty()) {
 			// Build child chains
 			val childrenList = mutableListOf<IKChain>()
+			val childOrder = if (chain.tailConstraint == null) order else order + 1
+			val childLevel = if (chain.tailConstraint == null) level + 1 else 0
 			for (child in currentBone.children) {
-				val childChain = chainBuilder(child, chain, level + 1, positionalConstraints, rotationalConstraints)
+				val childChain = chainBuilder(child, chain, childOrder, childLevel, positionalConstraints, rotationalConstraints)
 				if (neededChain(childChain)) {
 					childrenList.add(childChain)
 				}
@@ -125,6 +128,7 @@ class IKSolver(private val root: Bone) {
 		val newChain = IKChain(
 			boneList,
 			chain.parent,
+			chain.order,
 			chain.level,
 			chain.baseConstraint,
 			childChain.tailConstraint,
