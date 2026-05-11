@@ -27,6 +27,7 @@ import { WrenchIcon } from '@/components/commons/icon/WrenchIcons';
 import { NumberSelector } from '@/components/commons/NumberSelector';
 import { Radio } from '@/components/commons/Radio';
 import { Typography } from '@/components/commons/Typography';
+import { TipBox } from '@/components/commons/TipBox';
 import {
   SettingsPageLayout,
   SettingsPagePaneLayout,
@@ -924,6 +925,9 @@ export function GeneralSettings() {
                 )}
               />
             </div>
+            {!watch('toggles.forceArmsFromHmd') && (
+              <TipBox>{l10n.getString('settings-general-fk_settings-arm_fk-legacy')}</TipBox>
+            )}
 
             <div className="flex flex-col pt-2">
               <Typography variant="section-title">
